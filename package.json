@@ -19,5 +19,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node index.js"
+  },
+  "dependencies": {
+    "@csound/browser": "^7.0.0-beta31"
   }
 }
