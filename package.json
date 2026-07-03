@@ -1,0 +1,23 @@
+{
+  "name": "csengine",
+  "version": "0.0.1",
+  "description": "Application to replace RNBO implementation",
+  "keywords": [
+    "csound"
+  ],
+  "homepage": "https://github.com/Nandos0804/csEngine#readme",
+  "bugs": {
+    "url": "https://github.com/Nandos0804/csEngine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nandos0804/csEngine.git"
+  },
+  "license": "MIT",
+  "author": "Giuseppe Ernandez",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  }
+}
