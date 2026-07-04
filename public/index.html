@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>csound-audio-app / step 1</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 40rem;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        color: #222;
+      }
+      button {
+        font-size: 1rem;
+        padding: 0.6rem 1.2rem;
+        margin-right: 0.5rem;
+        margin-top: 1rem;
+        cursor: pointer;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      #status {
+        margin-top: 1rem;
+        font-family: monospace;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>csound-audio-app</h1>
+    <p>Step 1: confirm @csound/browser loads and produces audio.</p>
+
+    <button id="start-btn">Start Csound engine</button>
+    <button id="tone-btn" disabled>Play test tone</button>
+
+    <div id="status">
+      Idle. Click "Start Csound engine" (requires a user click, per browser
+      audio policy).
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "@csound/browser/dist/csound.js": "/node_modules/@csound/browser/dist/csound.js"
+        }
+      }
+    </script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
