@@ -1,4 +1,4 @@
-import { CsoundEngine } from "./src/CSWrapper.js";
+import { CsoundEngine } from "./src/cswrapper.js";
 
 // Bare-bones orchestra: instrument 1 is a 440Hz sine tone, 1 second long,
 // with a short fade in/out so it doesn't click.

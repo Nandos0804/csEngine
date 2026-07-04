@@ -8,7 +8,7 @@ jest.unstable_mockModule(
   "@csound/browser/dist/csound.js",
   () => mockCsoundModule,
 );
-const { CsoundEngine } = await import("../public/src/CSWrapper.js");
+const { CsoundEngine } = await import("../public/src/cswrapper.js");
 const { Csound } = mockCsoundModule;
 
 describe("CsoundEngine", () => {
