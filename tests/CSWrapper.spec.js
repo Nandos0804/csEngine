@@ -21,7 +21,7 @@ describe("CsoundEngine", () => {
     // Create a mock instance with all the methods CsoundEngine interacts with
     mockCsoundInstance = {
       start: jest.fn().mockResolvedValue(undefined),
-      compileCsdText: jest.fn().mockResolvedValue(undefined),
+      compileCSD: jest.fn().mockResolvedValue(undefined),
       readScore: jest.fn().mockResolvedValue(undefined),
       pause: jest.fn().mockResolvedValue(undefined),
       resume: jest.fn().mockResolvedValue(undefined),
@@ -40,12 +40,12 @@ describe("CsoundEngine", () => {
       expect(engine.isStarted).toBe(false);
     });
 
-    it("should start successfully if Csound initializes correctly", async () => {
+    it("should initialize successfully if Csound initializes correctly", async () => {
       await engine.start();
 
       expect(Csound).toHaveBeenCalledTimes(1);
-      expect(mockCsoundInstance.start).toHaveBeenCalledTimes(1);
-      expect(engine.isStarted).toBe(true);
+      expect(mockCsoundInstance.start).not.toHaveBeenCalled();
+      expect(engine.isStarted).toBe(false);
     });
 
     it("should throw an error if Csound() factory returns null/undefined", async () => {
@@ -57,7 +57,7 @@ describe("CsoundEngine", () => {
       expect(engine.isStarted).toBe(false);
     });
 
-    it("should do nothing if start() is called when already started", async () => {
+    it("should do nothing if start() is called when already created", async () => {
       await engine.start();
       jest.clearAllMocks();
 
@@ -84,6 +84,7 @@ describe("CsoundEngine", () => {
   describe("Engine operations (Post-start)", () => {
     beforeEach(async () => {
       await engine.start();
+      await engine.compile("<csd>test</csd>");
       jest.clearAllMocks();
     });
 
@@ -91,7 +92,9 @@ describe("CsoundEngine", () => {
       const testCsd = "<csd>test</csd>";
       await engine.compile(testCsd);
 
-      expect(mockCsoundInstance.compileCsdText).toHaveBeenCalledWith(testCsd);
+      expect(mockCsoundInstance.compileCSD).toHaveBeenCalledWith(testCsd, 1);
+      expect(mockCsoundInstance.start).not.toHaveBeenCalled();
+      expect(engine.isStarted).toBe(true);
     });
 
     it("should send score events correctly", async () => {
@@ -132,6 +135,7 @@ describe("CsoundEngine", () => {
   describe("dispose()", () => {
     it("should cleanly stop, terminate, and reset state on dispose", async () => {
       await engine.start();
+      await engine.compile("<csd>test</csd>");
       jest.clearAllMocks();
 
       await engine.dispose();
@@ -139,6 +143,7 @@ describe("CsoundEngine", () => {
       expect(mockCsoundInstance.stop).toHaveBeenCalledTimes(1);
       expect(mockCsoundInstance.terminateInstance).toHaveBeenCalledTimes(1);
       expect(engine.isStarted).toBe(false);
+      await expect(engine.start()).resolves.toBeUndefined();
     });
 
     it("should safely dispose even if terminateInstance is missing on the WASM object", async () => {
