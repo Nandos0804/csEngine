@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions or support
+    url: https://github.com/Nandos0804/csEngine/discussions
+    about: Ask questions or get support for this project
