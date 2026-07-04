@@ -24,7 +24,7 @@ describe("main.js UI wiring", () => {
 
     CsoundEngineMock = jest.fn().mockImplementation(() => mockEngine);
 
-    jest.unstable_mockModule("../public/src/CSWrapper.js", () => ({
+    jest.unstable_mockModule("../public/src/cswrapper.js", () => ({
       CsoundEngine: CsoundEngineMock,
     }));
 
