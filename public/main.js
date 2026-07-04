@@ -28,6 +28,7 @@ endin
 const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("start-btn");
 const toneBtn = document.getElementById("tone-btn");
+const stopBtn = document.getElementById("stop-btn");
 
 const engine = new CsoundEngine();
 
@@ -43,10 +44,26 @@ startBtn.addEventListener("click", async () => {
     await engine.compile(TEST_CSD);
     setStatus('Engine running. Click "Play test tone" to check audio.');
     toneBtn.disabled = false;
+    stopBtn.disabled = false;
   } catch (err) {
     console.error(err);
     setStatus(`Failed to start: ${err.message}`);
     startBtn.disabled = false;
+  }
+});
+
+stopBtn.addEventListener("click", async () => {
+  stopBtn.disabled = true;
+  setStatus("Stopping Csound engine...");
+  try {
+    await engine.dispose();
+    setStatus("Csound engine stopped.");
+    toneBtn.disabled = true;
+    startBtn.disabled = false;
+  } catch (err) {
+    console.error(err);
+    setStatus(`Failed to stop: ${err.message}`);
+    stopBtn.disabled = false;
   }
 });
 

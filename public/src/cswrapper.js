@@ -77,6 +77,7 @@ export class CsoundEngine {
     await this._csound.terminateInstance?.();
     this._csound = null;
     this._started = false;
+    this._created = false;
   }
 
   _assertCreated() {
@@ -87,7 +88,7 @@ export class CsoundEngine {
 
   _assertStarted() {
     if (!this._started || !this._csound) {
-      throw new Error("CsoundEngine: call compile() before using the engine.");
+      throw new Error("CsoundEngine: call start() before using the engine.");
     }
   }
 }
