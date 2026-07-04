@@ -21,7 +21,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
     "start": "node index.js",
     "format": "prettier --write .",
     "lint": "eslint .",
@@ -35,6 +35,7 @@
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "lint-staged": "^17.0.8",
     "prettier": "3.9.4"
   }
