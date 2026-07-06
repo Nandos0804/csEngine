@@ -1,34 +1,15 @@
 import { CsoundEngine } from "./src/cswrapper.js";
-
-// Bare-bones orchestra: instrument 1 is a 440Hz sine tone, 1 second long,
-// with a short fade in/out so it doesn't click.
-const TEST_CSD = `
-<CsoundSynthesizer>
-<CsOptions>
--odac
-</CsOptions>
-<CsInstruments>
-sr = 44100
-ksmps = 32
-nchnls = 2
-0dbfs = 1
-
-instr 1
-  aenv linseg 0, 0.05, 0.3, 0.9, 0.3, 0.05, 0
-  asig poscil aenv, 440
-  outs asig, asig
-endin
-
-</CsInstruments>
-<CsScore>
-</CsScore>
-</CsoundSynthesizer>
-`;
+import {
+  POSCIL3_INSTR01_CSD,
+  POSCIL3_INSTR01_CHANNELS,
+} from "./src/instruments/poscil3-instr01.js";
 
 const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("start-btn");
 const toneBtn = document.getElementById("tone-btn");
 const stopBtn = document.getElementById("stop-btn");
+const ampSlider = document.getElementById("amp-slider");
+const freqSlider = document.getElementById("freq-slider");
 
 const engine = new CsoundEngine();
 
@@ -40,11 +21,20 @@ startBtn.addEventListener("click", async () => {
   startBtn.disabled = true;
   setStatus("Starting Csound engine...");
   try {
-    await engine.start();
-    await engine.compile(TEST_CSD);
-    setStatus('Engine running. Click "Play test tone" to check audio.');
+    // Stand-in for an AudioContext an RNBO session would already own -
+    // Csound is told to reuse it instead of creating its own, so the two
+    // engines can share one audio graph side-by-side.
+    const audioContext = new (
+      window.AudioContext || window.webkitAudioContext
+    )();
+
+    await engine.start({ audioContext });
+    await engine.compile(POSCIL3_INSTR01_CSD);
+    setStatus('Engine running. Click "Trigger note" to check audio.');
     toneBtn.disabled = false;
     stopBtn.disabled = false;
+    ampSlider.disabled = false;
+    freqSlider.disabled = false;
   } catch (err) {
     console.error(err);
     setStatus(`Failed to start: ${err.message}`);
@@ -59,6 +49,8 @@ stopBtn.addEventListener("click", async () => {
     await engine.dispose();
     setStatus("Csound engine stopped.");
     toneBtn.disabled = true;
+    ampSlider.disabled = true;
+    freqSlider.disabled = true;
     startBtn.disabled = false;
   } catch (err) {
     console.error(err);
@@ -69,11 +61,46 @@ stopBtn.addEventListener("click", async () => {
 
 toneBtn.addEventListener("click", async () => {
   try {
-    // i 1 0 1  ->  play instrument 1, start at time 0 (now), duration 1s
-    await engine.sendScoreEvent("i 1 0 1");
-    setStatus("Sent test tone event.");
+    // i 1 0 3600 -> play instrument 1 for a long held note so the sliders
+    // below have something to modulate live.
+    await engine.sendScoreEvent("i 1 0 3600");
+    setStatus("Sent trigger note event.");
   } catch (err) {
     console.error(err);
     setStatus(`Failed to send event: ${err.message}`);
+  }
+});
+
+ampSlider.addEventListener("input", async () => {
+  try {
+    await engine.handleMessage({
+      payload: [
+        {
+          op: "csound",
+          name: POSCIL3_INSTR01_CHANNELS.kamp,
+          data: Number(ampSlider.value),
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(err);
+    setStatus(`Failed to send payload: ${err.message}`);
+  }
+});
+
+freqSlider.addEventListener("input", async () => {
+  try {
+    await engine.handleMessage({
+      payload: [
+        {
+          op: "csound",
+          name: POSCIL3_INSTR01_CHANNELS.kcps,
+          data: Number(freqSlider.value),
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(err);
+    setStatus(`Failed to send payload: ${err.message}`);
   }
 });
