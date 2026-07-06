@@ -17,7 +17,9 @@ describe("main.js UI wiring", () => {
       <div id="status"></div>
     `;
 
-    global.AudioContext = jest.fn().mockImplementation(() => ({}));
+    global.AudioContext = jest.fn().mockImplementation(() => ({
+      close: jest.fn().mockResolvedValue(undefined),
+    }));
 
     mockEngine = {
       start: jest.fn().mockResolvedValue(undefined),
@@ -25,6 +27,7 @@ describe("main.js UI wiring", () => {
       sendScoreEvent: jest.fn().mockResolvedValue(undefined),
       handleMessage: jest.fn().mockResolvedValue(undefined),
       dispose: jest.fn().mockResolvedValue(undefined),
+      onMessage: jest.fn(),
     };
 
     CsoundEngineMock = jest.fn().mockImplementation(() => mockEngine);
@@ -68,9 +71,27 @@ describe("main.js UI wiring", () => {
     expect(status.textContent).toContain("Engine running");
   });
 
+  it("should forward Csound messages to the console", async () => {
+    const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+
+    const startBtn = document.getElementById("start-btn");
+    startBtn.click();
+    await flushPromises();
+
+    expect(mockEngine.onMessage).toHaveBeenCalledTimes(1);
+    const forward = mockEngine.onMessage.mock.calls[0][0];
+    forward("buffer underrun");
+
+    expect(consoleLogSpy).toHaveBeenCalledWith("[csound]", "buffer underrun");
+
+    consoleLogSpy.mockRestore();
+  });
+
   it("should fall back to webkitAudioContext when AudioContext is unavailable", async () => {
     delete global.AudioContext;
-    global.webkitAudioContext = jest.fn().mockImplementation(() => ({}));
+    global.webkitAudioContext = jest.fn().mockImplementation(() => ({
+      close: jest.fn().mockResolvedValue(undefined),
+    }));
 
     const startBtn = document.getElementById("start-btn");
 
@@ -142,17 +163,20 @@ describe("main.js UI wiring", () => {
     startBtn.click();
     await flushPromises();
 
+    const createdContext = global.AudioContext.mock.results[0].value;
+
     stopBtn.click();
     await flushPromises();
 
     expect(mockEngine.dispose).toHaveBeenCalledTimes(1);
+    expect(createdContext.close).toHaveBeenCalledTimes(1);
     expect(toneBtn.disabled).toBe(true);
     expect(ampSlider.disabled).toBe(true);
     expect(freqSlider.disabled).toBe(true);
     expect(startBtn.disabled).toBe(false);
   });
 
-  it("should show an error if engine start fails", async () => {
+  it("should show an error and close the AudioContext if engine start fails", async () => {
     mockEngine.start.mockRejectedValue(new Error("start failed"));
 
     const startBtn = document.getElementById("start-btn");
@@ -163,11 +187,32 @@ describe("main.js UI wiring", () => {
     startBtn.click();
     await flushPromises();
 
+    const createdContext = global.AudioContext.mock.results[0].value;
+
     expect(mockEngine.start).toHaveBeenCalledTimes(1);
     expect(status.textContent).toBe("Failed to start: start failed");
     expect(startBtn.disabled).toBe(false);
     expect(toneBtn.disabled).toBe(true);
     expect(stopBtn.disabled).toBe(true);
+    expect(createdContext.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("should show an error without closing an AudioContext if construction itself throws", async () => {
+    global.AudioContext = jest.fn().mockImplementation(() => {
+      throw new Error("no more contexts allowed");
+    });
+
+    const startBtn = document.getElementById("start-btn");
+    const status = document.getElementById("status");
+
+    startBtn.click();
+    await flushPromises();
+
+    expect(mockEngine.start).not.toHaveBeenCalled();
+    expect(status.textContent).toBe(
+      "Failed to start: no more contexts allowed",
+    );
+    expect(startBtn.disabled).toBe(false);
   });
 
   it("should show an error if engine stop fails", async () => {

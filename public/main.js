@@ -12,6 +12,12 @@ const ampSlider = document.getElementById("amp-slider");
 const freqSlider = document.getElementById("freq-slider");
 
 const engine = new CsoundEngine();
+// Owned by this demo page, not by CsoundEngine: dispose() deliberately
+// leaves a caller-supplied AudioContext running (so a real host, e.g. RNBO,
+// keeps its own context alive across a Csound restart). Since this demo
+// creates the context itself, it must close it explicitly or repeated
+// Start/Stop clicks leak AudioContexts until the browser refuses new ones.
+let audioContext = null;
 
 function setStatus(text) {
   statusEl.textContent = text;
@@ -24,11 +30,13 @@ startBtn.addEventListener("click", async () => {
     // Stand-in for an AudioContext an RNBO session would already own -
     // Csound is told to reuse it instead of creating its own, so the two
     // engines can share one audio graph side-by-side.
-    const audioContext = new (
-      window.AudioContext || window.webkitAudioContext
-    )();
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
     await engine.start({ audioContext });
+    // Surface Csound's own diagnostics (e.g. buffer underrun warnings, a
+    // common cause of audible clicks/glitches) with a clear prefix so they
+    // stand out from the rest of the page's console output.
+    engine.onMessage((message) => console.log("[csound]", message));
     await engine.compile(POSCIL3_INSTR01_CSD);
     setStatus('Engine running. Click "Trigger note" to check audio.');
     toneBtn.disabled = false;
@@ -39,6 +47,10 @@ startBtn.addEventListener("click", async () => {
     console.error(err);
     setStatus(`Failed to start: ${err.message}`);
     startBtn.disabled = false;
+    if (audioContext) {
+      await audioContext.close();
+      audioContext = null;
+    }
   }
 });
 
@@ -47,6 +59,8 @@ stopBtn.addEventListener("click", async () => {
   setStatus("Stopping Csound engine...");
   try {
     await engine.dispose();
+    await audioContext.close();
+    audioContext = null;
     setStatus("Csound engine stopped.");
     toneBtn.disabled = true;
     ampSlider.disabled = true;

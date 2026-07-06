@@ -31,6 +31,7 @@ csEngine is a JavaScript/Node.js application that serves a browser-based Csound 
 - `CsoundEngine.start({ audioContext, autoConnect })` – optional options to share an existing AudioContext (e.g. RNBO's) instead of creating a new one
 - `CsoundEngine.getAudioContext()` – returns the AudioContext Csound is using
 - `CsoundEngine.handleMessage(message)` – dispatches `{ payload: [{ op: "csound", name, data }] }` entries to Csound control channels via `setControlChannel`
+- `CsoundEngine.onMessage(callback)` – subscribes to Csound's own log messages (compiler diagnostics, buffer-underrun warnings, etc.); returns an unsubscribe function
 - `CsoundEngine.compile()`, `sendScoreEvent()`, `pause()`, `resume()`, `dispose()` – unchanged from prior versions
 
 ## Project Knowledge
@@ -181,7 +182,7 @@ Agents must follow these rules strictly:
 - Adding new dependencies or changing versions in package.json
 - Modifying the Express server configuration in index.js
 - Changing test framework, linter, or formatter settings
-- Adding new public methods to `CsoundEngine` beyond the existing `start()`, `getAudioContext()`, `handleMessage()`, `compile()`, `sendScoreEvent()`, `pause()`, `resume()`, `dispose()`
+- Adding new public methods to `CsoundEngine` beyond the existing `start()`, `getAudioContext()`, `handleMessage()`, `onMessage()`, `compile()`, `sendScoreEvent()`, `pause()`, `resume()`, `dispose()`
 - Changing the `<opcode>_instr<NN>_<param>` control channel naming convention or the shared payload schema (`{ payload: [{ op, name, data }] }`) — it's agreed with the RNBO-side integrator
 
 **Never do:**

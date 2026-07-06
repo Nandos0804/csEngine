@@ -27,10 +27,23 @@ chnset 0.3, "${POSCIL3_INSTR01_CHANNELS.kamp}"
 chnset 440, "${POSCIL3_INSTR01_CHANNELS.kcps}"
 
 instr 1
-  kamp chnget "${POSCIL3_INSTR01_CHANNELS.kamp}"
-  kcps chnget "${POSCIL3_INSTR01_CHANNELS.kcps}"
+  ; i-rate reads seed port's initial value so the note starts at the
+  ; current channel value instead of ramping up from 0 over iSmooth seconds.
+  iAmp chnget "${POSCIL3_INSTR01_CHANNELS.kamp}"
+  iCps chnget "${POSCIL3_INSTR01_CHANNELS.kcps}"
+  kampIn chnget "${POSCIL3_INSTR01_CHANNELS.kamp}"
+  kcpsIn chnget "${POSCIL3_INSTR01_CHANNELS.kcps}"
+  ; A UI control (e.g. a slider) can step the channel value between k-cycles;
+  ; feeding that step straight into poscil3 produces an audible click on
+  ; every change. port glides toward the new value over iSmooth seconds
+  ; instead of jumping to it.
+  iSmooth = 0.02
+  kamp port kampIn, iSmooth, iAmp
+  kcps port kcpsIn, iSmooth, iCps
   asig poscil3 kamp, kcps
-  outs asig, asig
+  ; outs is deprecated in Csound 7 - out now takes one arg per channel
+  ; (nchnls = 2 here), replacing outs/outq/outo's old per-count opcodes.
+  out asig, asig
 endin
 
 </CsInstruments>

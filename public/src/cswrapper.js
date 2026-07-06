@@ -121,6 +121,21 @@ export class CsoundEngine {
   }
 
   /**
+   * Subscribe to Csound's own log/console messages - compiler diagnostics,
+   * runtime warnings, and performance messages such as buffer underruns
+   * (a common, otherwise-silent cause of audible clicks/glitches). Csound
+   * already prints these via console.log by default; this lets the host
+   * page also inspect or filter them without opening dev tools.
+   * @param {(message: string) => void} callback
+   * @returns {() => void} Unsubscribe function.
+   */
+  onMessage(callback) {
+    this._assertCreated();
+    this._csound.on("message", callback);
+    return () => this._csound.off("message", callback);
+  }
+
+  /**
    * Send a single score line / event, e.g. "i 1 0 2 60 0.5".
    * This is the method a future WebSocket handler will call once we have
    * the message schema - one JSON message in, one (or more) score events

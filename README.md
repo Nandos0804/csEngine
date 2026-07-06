@@ -66,6 +66,18 @@ function onIncomingMessage(message) {
 
 `handleMessage()` only acts on entries where `op` is `"csound"`; every other entry in the same payload is ignored, since the payload is shared with other subsystems (e.g. RNBO).
 
+### Diagnosing audio glitches
+
+Csound reports compiler errors and runtime warnings (e.g. buffer underruns, a common and otherwise-silent cause of audible clicks) through its own message stream, which is already logged via `console.log` by default. `engine.onMessage(callback)` lets the host also inspect or filter that stream without opening dev tools; it returns an unsubscribe function:
+
+```js
+const stopLogging = engine.onMessage((message) =>
+  console.log("[csound]", message),
+);
+// later, if needed:
+stopLogging();
+```
+
 ### Payload schema
 
 ```json
@@ -103,7 +115,7 @@ Control channel names follow `<opcode>_instr<NN>_<param>`, so the channel maps d
 | `poscil3_instr01_kamp` | `POSCIL3_INSTR01_CHANNELS.kamp` | `kamp`       | `0.3`   |
 | `poscil3_instr01_kcps` | `POSCIL3_INSTR01_CHANNELS.kcps` | `kcps`       | `440`   |
 
-Trigger the note with a score event (e.g. `engine.sendScoreEvent("i 1 0 3600")`), then drive `kamp`/`kcps` live via `handleMessage()`.
+Trigger the note with a score event (e.g. `engine.sendScoreEvent("i 1 0 3600")`), then drive `kamp`/`kcps` live via `handleMessage()`. Both channels are smoothed through `port` (20ms glide) before reaching `poscil3`, so stepped updates from a UI control don't produce an audible click on every change.
 
 ### Adding a new instrument
 

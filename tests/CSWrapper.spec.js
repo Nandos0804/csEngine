@@ -29,6 +29,8 @@ describe("CsoundEngine", () => {
       terminateInstance: jest.fn().mockResolvedValue(undefined),
       getAudioContext: jest.fn().mockResolvedValue(undefined),
       setControlChannel: jest.fn().mockResolvedValue(undefined),
+      on: jest.fn(),
+      off: jest.fn(),
     };
 
     // Make the factory function return our mock instance by default
@@ -140,6 +142,24 @@ describe("CsoundEngine", () => {
       mockCsoundInstance.getAudioContext.mockResolvedValue(audioContext);
 
       await expect(engine.getAudioContext()).resolves.toBe(audioContext);
+    });
+
+    it("should subscribe a message listener and return an unsubscribe function", async () => {
+      const callback = jest.fn();
+
+      const unsubscribe = engine.onMessage(callback);
+      expect(mockCsoundInstance.on).toHaveBeenCalledWith("message", callback);
+
+      unsubscribe();
+      expect(mockCsoundInstance.off).toHaveBeenCalledWith("message", callback);
+    });
+  });
+
+  describe("onMessage() before starting", () => {
+    it("should throw an error when calling onMessage() before starting", () => {
+      expect(() => engine.onMessage(() => {})).toThrow(
+        "CsoundEngine: call start() before using the engine.",
+      );
     });
   });
 
