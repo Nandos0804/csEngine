@@ -5,7 +5,7 @@
 - This repository is a small JavaScript/Node.js app that serves a browser-based Csound audio wrapper designed to run side-by-side with an [RNBO](https://rnbo.cycling74.com/js) session, sharing one `AudioContext`.
 - The main entry point is [index.js](../index.js), which starts an Express server and serves the static frontend from [public](../public).
 - The core runtime logic lives in [public/src/cswrapper.js](../public/src/cswrapper.js), which wraps the Csound WASM browser API and dispatches a shared JSON payload (`{ payload: [{ op: "csound", name, data }] }`) to Csound control channels.
-- Instrument templates live in [public/src/instruments/](../public/src/instruments/), e.g. `poscil3-instr01.js`, following the `<opcode>_instr<NN>_<param>` control channel naming convention.
+- Instrument templates live in [public/src/instruments/](../public/src/instruments/), e.g. `poscil3-instr01.js` and `vco2-instr02.js`, following the `<opcode>_instr<NN>_<param>` control channel naming convention.
 - **[README.md](../README.md) is the canonical integration/API doc** — written so another project (or an LLM) can copy the two source files above and wire them in without any other documentation. Keep it in sync with the actual public API.
 - Tests are in [tests/CSWrapper.spec.js](../tests/CSWrapper.spec.js), [tests/instruments/](../tests/instruments/), and [tests/Main.spec.js](../tests/Main.spec.js).
 
@@ -17,7 +17,7 @@
   - [jest.config.cjs](../jest.config.cjs) configures Jest (100% coverage threshold on branches/functions/lines/statements).
   - [eslint.config.js](../eslint.config.js) configures ESLint.
   - [README.md](../README.md) is the integration guide and API reference.
-  - [public/index.html](../public/index.html) and [public/main.js](../public/main.js) provide the browser UI bootstrap / reference demo (shared AudioContext, poscil3 instrument, live payload dispatch via sliders).
+  - [public/index.html](../public/index.html) and [public/main.js](../public/main.js) provide the browser UI bootstrap / reference demo (shared AudioContext, poscil3 + vco2 instruments compiled side by side, live payload dispatch via sliders).
   - [public/src/cswrapper.js](../public/src/cswrapper.js) contains the `CsoundEngine` wrapper.
   - [public/src/instruments/](../public/src/instruments/) contains instrument templates (CSD string + control channel constants).
   - [tests/CSWrapper.spec.js](../tests/CSWrapper.spec.js), [tests/instruments/](../tests/instruments/), [tests/Main.spec.js](../tests/Main.spec.js) contain Jest coverage.
@@ -43,6 +43,7 @@ Always use the repository's existing npm scripts rather than inventing new comma
 
 - Use: `npm run lint`
 - Verified result: this command completes successfully.
+- `eslint.config.js` enables `@eslint/js`'s recommended rule set (plus per-directory `globals` for Node/browser/Jest) — it actually catches real issues (undefined refs, unused vars, etc.), not just formatting. [.github/workflows/tests.yml](../.github/workflows/tests.yml) runs this in CI on every push/PR, alongside tests and the format check.
 
 ### 4. Check formatting
 
@@ -53,7 +54,7 @@ Always use the repository's existing npm scripts rather than inventing new comma
 
 - Use: `npm start`
 - Verified result: the app starts successfully and listens on port 3000.
-- The server serves the static frontend from [public](../public) and also exposes `/node_modules` for browser assets.
+- The server serves the static frontend from [public](../public) and also exposes `/node_modules/@csound/browser` (only that package, not the whole `node_modules` tree) for the browser-side Csound WASM import.
 
 ## Important implementation notes
 

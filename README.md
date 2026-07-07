@@ -18,10 +18,11 @@ This section is the API reference. It's written so it can be copy-pasted into an
 
 ### What to copy
 
-Two files, no build step, no npm install required in the host project:
+The wrapper plus whichever instrument templates you need, no build step, no npm install required in the host project:
 
 - [public/src/cswrapper.js](public/src/cswrapper.js) — the `CsoundEngine` class
-- [public/src/instruments/poscil3-instr01.js](public/src/instruments/poscil3-instr01.js) — the first instrument template
+- [public/src/instruments/poscil3-instr01.js](public/src/instruments/poscil3-instr01.js) — instrument 1, a continuously controllable oscillator
+- [public/src/instruments/vco2-instr02.js](public/src/instruments/vco2-instr02.js) — instrument 2, a filtered sawtooth
 
 Drop them anywhere in your project (e.g. `src/csound/`) and import them:
 
@@ -34,6 +35,8 @@ import {
 ```
 
 `@csound/browser` is the only runtime dependency `cswrapper.js` needs; make sure it (or an import map pointing `@csound/browser/dist/csound.js` at the package) is available in the host project.
+
+Working in TypeScript, or just want editor autocomplete over the plain-JS wrapper? Run `npm run types` to emit `.d.ts` declarations (generated from the existing JSDoc) into a local `types/` directory — it's build output, not something to commit or ship.
 
 ### Where to create the engine
 
@@ -53,6 +56,13 @@ button.addEventListener("click", async () => {
 ```
 
 If Csound should own the context instead (no `audioContext` passed), call `await engine.getAudioContext()` afterwards to retrieve it and hand it to RNBO instead.
+
+`compile()` adds instruments to the running engine rather than replacing its orchestra, so calling it more than once (e.g. once per instrument template) loads them all side by side:
+
+```js
+await engine.compile(POSCIL3_INSTR01_CSD);
+await engine.compile(VCO2_INSTR02_CSD);
+```
 
 ### Where to add the payload listener
 
@@ -117,6 +127,19 @@ Control channel names follow `<opcode>_instr<NN>_<param>`, so the channel maps d
 
 Trigger the note with a score event (e.g. `engine.sendScoreEvent("i 1 0 3600")`), then drive `kamp`/`kcps` live via `handleMessage()`. Both channels are smoothed through `port` (20ms glide) before reaching `poscil3`, so stepped updates from a UI control don't produce an audible click on every change.
 
+#### vco2-instr02
+
+`public/src/instruments/vco2-instr02.js` — instrument 2, a sawtooth (`vco2(kamp, kcps)`) through a resonant lowpass filter (`moogladder(asig, kcutoff, kres)`).
+
+| Channel                | Constant                        | Csound param | Default |
+| ---------------------- | ------------------------------- | ------------ | ------- |
+| `vco2_instr02_kamp`    | `VCO2_INSTR02_CHANNELS.kamp`    | `kamp`       | `0.3`   |
+| `vco2_instr02_kcps`    | `VCO2_INSTR02_CHANNELS.kcps`    | `kcps`       | `220`   |
+| `vco2_instr02_kcutoff` | `VCO2_INSTR02_CHANNELS.kcutoff` | `kcutoff`    | `2000`  |
+| `vco2_instr02_kres`    | `VCO2_INSTR02_CHANNELS.kres`    | `kres`       | `0.3`   |
+
+Trigger the note with a score event (e.g. `engine.sendScoreEvent("i 2 0 3600")`), then drive any of the four channels live via `handleMessage()` — including several at once in a single call (e.g. `kcutoff` and `kres` together), since payload items are applied in array order. All four channels are smoothed through `port` (20ms glide) before reaching `vco2`/`moogladder`.
+
 ### Adding a new instrument
 
 1. Add `public/src/instruments/<opcode>-instr<NN>.js` exporting a `<NAME>_CHANNELS` map and a `<NAME>_CSD` string, following the pattern in `poscil3-instr01.js`.
@@ -143,7 +166,7 @@ npm install
 npm start
 ```
 
-Open `http://localhost:3000`. The demo starts Csound with a page-local `AudioContext` (standing in for one an RNBO session would own), compiles `poscil3-instr01`, and exposes amp/freq sliders that drive it through `handleMessage()` — the same path a real RNBO integration would use.
+Open `http://localhost:3000`. The demo starts Csound with a page-local `AudioContext` (standing in for one an RNBO session would own), compiles both `poscil3-instr01` and `vco2-instr02` into the same running engine, and exposes sliders for each that drive them through `handleMessage()` — the same path a real RNBO integration would use.
 
 > The browser will require a user interaction, such as clicking a button, before audio can start. This is standard browser audio policy.
 
@@ -162,6 +185,7 @@ npm run format -- --check
 - [public/main.js](public/main.js) — demo wiring
 - [public/src/cswrapper.js](public/src/cswrapper.js) — `CsoundEngine` (the integration API)
 - [public/src/instruments/poscil3-instr01.js](public/src/instruments/poscil3-instr01.js) — poscil3 instrument template
+- [public/src/instruments/vco2-instr02.js](public/src/instruments/vco2-instr02.js) — filtered vco2 instrument template
 - [tests/](tests/) — Jest coverage for the wrapper, instrument templates, and demo wiring
 
 ## Contact

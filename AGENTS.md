@@ -40,7 +40,7 @@ csEngine is a JavaScript/Node.js application that serves a browser-based Csound 
 
 - `index.js` – Express server entry point, serves static frontend from `public/`
 - `public/src/cswrapper.js` – Core Csound WASM wrapper (main implementation)
-- `public/src/instruments/` – Instrument templates (CSD string + control channel constants per instrument), e.g. `poscil3-instr01.js`
+- `public/src/instruments/` – Instrument templates (CSD string + control channel constants per instrument), e.g. `poscil3-instr01.js` and `vco2-instr02.js`
 - `tests/CSWrapper.spec.js` – Jest test suite for wrapper behavior
 - `tests/instruments/` – Jest test suite for instrument templates
 - `public/main.js` – Browser-side initialization / demo wiring
@@ -48,7 +48,7 @@ csEngine is a JavaScript/Node.js application that serves a browser-based Csound 
 
 **Static Assets:**
 
-- The Express server serves the `public/` directory and exposes `/node_modules` for browser assets
+- The Express server serves the `public/` directory and exposes only `/node_modules/@csound/browser` (not the whole `node_modules` tree) for the browser-side Csound WASM import
 - Csound WASM is loaded via `@csound/browser/dist/csound.js`
 
 **Architecture:**
@@ -201,8 +201,9 @@ Agents must follow these rules strictly:
 - **Express**: HTTP server framework
 - **@csound/browser**: Csound WASM browser API
 - **Jest**: Testing framework
-- **ESLint**: Code linting
+- **ESLint**: Code linting (recommended rule set + per-directory globals, not just formatting)
 - **Prettier**: Code formatting
+- **TypeScript**: `.d.ts` generation only (`npm run types`), for host-project editor support over the plain-JS wrapper — no other project file is authored in TS
 
 ## Agent Guidance
 
