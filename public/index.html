@@ -33,13 +33,16 @@
   <body>
     <h1>csEngine</h1>
     <p>
-      Reference demo: poscil3 instrument, driven by the same JSON payload shape
-      used to integrate alongside an RNBO session.
+      Reference demo: two instrument templates compiled into the same running
+      engine, both driven by the same JSON payload shape used to integrate
+      alongside an RNBO session.
     </p>
 
     <button id="start-btn">Start Csound engine</button>
-    <button id="tone-btn" disabled>Trigger note</button>
     <button id="stop-btn" disabled>Stop Csound engine</button>
+
+    <h2>Instrument 1: poscil3 sine</h2>
+    <button id="tone-btn" disabled>Trigger note</button>
 
     <p>
       <label for="amp-slider">amp (poscil3_instr01_kamp)</label><br />
@@ -62,6 +65,35 @@
         max="1760"
         step="1"
         value="440"
+        disabled
+      />
+    </p>
+
+    <h2>Instrument 2: vco2 saw through moogladder</h2>
+    <button id="tone2-btn" disabled>Trigger note</button>
+    <button id="reset-filter-btn" disabled>Reset filter</button>
+
+    <p>
+      <label for="cutoff-slider">cutoff (vco2_instr02_kcutoff)</label><br />
+      <input
+        id="cutoff-slider"
+        type="range"
+        min="200"
+        max="8000"
+        step="1"
+        value="2000"
+        disabled
+      />
+    </p>
+    <p>
+      <label for="res-slider">res (vco2_instr02_kres)</label><br />
+      <input
+        id="res-slider"
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value="0.3"
         disabled
       />
     </p>
