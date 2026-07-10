@@ -18,6 +18,18 @@ describe("main.js UI wiring", () => {
       <button id="reset-filter-btn" disabled>Reset filter</button>
       <input id="cutoff-slider" type="range" min="200" max="8000" step="1" value="2000" disabled />
       <input id="res-slider" type="range" min="0" max="1" step="0.01" value="0.3" disabled />
+      <button id="ensemble-trigger-btn" disabled>Trigger ensemble</button>
+      <button id="ensemble-release-btn" disabled>Release ensemble</button>
+      <input id="pitch-slider" type="range" min="55" max="880" step="1" value="220" disabled />
+      <input id="drift-slider" type="range" min="0" max="50" step="0.5" value="5" disabled />
+      <input id="duty-slider" type="range" min="0.05" max="0.95" step="0.01" value="0.5" disabled />
+      <button id="pink-trigger-btn" disabled>Trigger noise</button>
+      <button id="pink-release-btn" disabled>Release noise</button>
+      <input id="pink-amp-slider" type="range" min="0" max="1" step="0.01" value="0.2" disabled />
+      <input id="att-slider" type="range" min="0.001" max="2" step="0.001" value="0.05" disabled />
+      <input id="dec-slider" type="range" min="0.001" max="2" step="0.001" value="0.1" disabled />
+      <input id="sus-slider" type="range" min="0" max="1" step="0.01" value="0.7" disabled />
+      <input id="rel-slider" type="range" min="0.001" max="4" step="0.001" value="0.5" disabled />
       <div id="status"></div>
     `;
 
@@ -70,7 +82,9 @@ describe("main.js UI wiring", () => {
     expect(mockEngine.start).toHaveBeenCalledWith({
       audioContext: expect.any(Object),
     });
-    expect(mockEngine.compile).toHaveBeenCalledTimes(2);
+    // 7 CSDs: poscil3-instr01, vco2-instr02, the four square voices, and
+    // pinkish-instr07.
+    expect(mockEngine.compile).toHaveBeenCalledTimes(7);
     expect(startBtn.disabled).toBe(true);
     expect(toneBtn.disabled).toBe(false);
     expect(stopBtn.disabled).toBe(false);
@@ -80,6 +94,22 @@ describe("main.js UI wiring", () => {
     expect(resetFilterBtn.disabled).toBe(false);
     expect(cutoffSlider.disabled).toBe(false);
     expect(resSlider.disabled).toBe(false);
+    expect(document.getElementById("ensemble-trigger-btn").disabled).toBe(
+      false,
+    );
+    expect(document.getElementById("pitch-slider").disabled).toBe(false);
+    expect(document.getElementById("drift-slider").disabled).toBe(false);
+    expect(document.getElementById("duty-slider").disabled).toBe(false);
+    expect(document.getElementById("pink-trigger-btn").disabled).toBe(false);
+    expect(document.getElementById("pink-amp-slider").disabled).toBe(false);
+    expect(document.getElementById("att-slider").disabled).toBe(false);
+    expect(document.getElementById("dec-slider").disabled).toBe(false);
+    expect(document.getElementById("sus-slider").disabled).toBe(false);
+    expect(document.getElementById("rel-slider").disabled).toBe(false);
+    // Release buttons additionally require a held note, so starting the
+    // engine must not enable them.
+    expect(document.getElementById("ensemble-release-btn").disabled).toBe(true);
+    expect(document.getElementById("pink-release-btn").disabled).toBe(true);
     expect(status.textContent).toContain("Engine running");
   });
 
@@ -267,6 +297,18 @@ describe("main.js UI wiring", () => {
     expect(resetFilterBtn.disabled).toBe(true);
     expect(cutoffSlider.disabled).toBe(true);
     expect(resSlider.disabled).toBe(true);
+    expect(document.getElementById("ensemble-trigger-btn").disabled).toBe(true);
+    expect(document.getElementById("ensemble-release-btn").disabled).toBe(true);
+    expect(document.getElementById("pitch-slider").disabled).toBe(true);
+    expect(document.getElementById("drift-slider").disabled).toBe(true);
+    expect(document.getElementById("duty-slider").disabled).toBe(true);
+    expect(document.getElementById("pink-trigger-btn").disabled).toBe(true);
+    expect(document.getElementById("pink-release-btn").disabled).toBe(true);
+    expect(document.getElementById("pink-amp-slider").disabled).toBe(true);
+    expect(document.getElementById("att-slider").disabled).toBe(true);
+    expect(document.getElementById("dec-slider").disabled).toBe(true);
+    expect(document.getElementById("sus-slider").disabled).toBe(true);
+    expect(document.getElementById("rel-slider").disabled).toBe(true);
     expect(startBtn.disabled).toBe(false);
   });
 
@@ -436,6 +478,232 @@ describe("main.js UI wiring", () => {
     await flushPromises();
 
     resetFilterBtn.click();
+    await flushPromises();
+
+    expect(status.textContent).toBe("Failed to send payload: payload failed");
+  });
+
+  it("should hold all four square voices and flip trigger/release when the ensemble is triggered", async () => {
+    const startBtn = document.getElementById("start-btn");
+    const triggerBtn = document.getElementById("ensemble-trigger-btn");
+    const releaseBtn = document.getElementById("ensemble-release-btn");
+    const status = document.getElementById("status");
+
+    startBtn.click();
+    await flushPromises();
+
+    triggerBtn.click();
+    await flushPromises();
+
+    expect(mockEngine.sendScoreEvent.mock.calls).toEqual([
+      ["i 3 0 -1"],
+      ["i 4 0 -1"],
+      ["i 5 0 -1"],
+      ["i 6 0 -1"],
+    ]);
+    expect(triggerBtn.disabled).toBe(true);
+    expect(releaseBtn.disabled).toBe(false);
+    expect(status.textContent).toBe(
+      "Triggered square ensemble (instruments 3-6).",
+    );
+  });
+
+  it("should turn off all four square voices and flip trigger/release when the ensemble is released", async () => {
+    const startBtn = document.getElementById("start-btn");
+    const triggerBtn = document.getElementById("ensemble-trigger-btn");
+    const releaseBtn = document.getElementById("ensemble-release-btn");
+    const status = document.getElementById("status");
+
+    startBtn.click();
+    await flushPromises();
+
+    triggerBtn.click();
+    await flushPromises();
+    mockEngine.sendScoreEvent.mockClear();
+
+    releaseBtn.click();
+    await flushPromises();
+
+    expect(mockEngine.sendScoreEvent.mock.calls).toEqual([
+      ["i -3 0 0"],
+      ["i -4 0 0"],
+      ["i -5 0 0"],
+      ["i -6 0 0"],
+    ]);
+    expect(triggerBtn.disabled).toBe(false);
+    expect(releaseBtn.disabled).toBe(true);
+    expect(status.textContent).toBe("Released square ensemble.");
+  });
+
+  it("should keep the trigger/release buttons unchanged if an ensemble trigger event fails", async () => {
+    mockEngine.sendScoreEvent.mockRejectedValue(new Error("ensemble failed"));
+
+    const startBtn = document.getElementById("start-btn");
+    const triggerBtn = document.getElementById("ensemble-trigger-btn");
+    const releaseBtn = document.getElementById("ensemble-release-btn");
+    const status = document.getElementById("status");
+
+    startBtn.click();
+    await flushPromises();
+
+    triggerBtn.click();
+    await flushPromises();
+
+    expect(status.textContent).toBe("Failed to send event: ensemble failed");
+    expect(triggerBtn.disabled).toBe(false);
+    expect(releaseBtn.disabled).toBe(true);
+  });
+
+  it("should transpose all four square voices in their 4:5:6:8 spread when the pitch slider moves", async () => {
+    const startBtn = document.getElementById("start-btn");
+    const pitchSlider = document.getElementById("pitch-slider");
+
+    startBtn.click();
+    await flushPromises();
+
+    pitchSlider.value = "440";
+    pitchSlider.dispatchEvent(new Event("input"));
+    await flushPromises();
+
+    expect(mockEngine.handleMessage).toHaveBeenCalledWith({
+      payload: [
+        { op: "csound", name: "vco2_instr03_kcps", data: 440 },
+        { op: "csound", name: "vco2_instr04_kcps", data: 550 },
+        { op: "csound", name: "vco2_instr05_kcps", data: 660 },
+        { op: "csound", name: "vco2_instr06_kcps", data: 880 },
+      ],
+    });
+  });
+
+  it("should dispatch the drift range to all four square voices when the drift slider moves", async () => {
+    const startBtn = document.getElementById("start-btn");
+    const driftSlider = document.getElementById("drift-slider");
+
+    startBtn.click();
+    await flushPromises();
+
+    driftSlider.value = "12";
+    driftSlider.dispatchEvent(new Event("input"));
+    await flushPromises();
+
+    expect(mockEngine.handleMessage).toHaveBeenCalledWith({
+      payload: [
+        { op: "csound", name: "vco2_instr03_krand", data: 12 },
+        { op: "csound", name: "vco2_instr04_krand", data: 12 },
+        { op: "csound", name: "vco2_instr05_krand", data: 12 },
+        { op: "csound", name: "vco2_instr06_krand", data: 12 },
+      ],
+    });
+  });
+
+  it("should dispatch the duty cycle to all four square voices when the duty slider moves", async () => {
+    const startBtn = document.getElementById("start-btn");
+    const dutySlider = document.getElementById("duty-slider");
+
+    startBtn.click();
+    await flushPromises();
+
+    dutySlider.value = "0.25";
+    dutySlider.dispatchEvent(new Event("input"));
+    await flushPromises();
+
+    expect(mockEngine.handleMessage).toHaveBeenCalledWith({
+      payload: [
+        { op: "csound", name: "vco2_instr03_kpw", data: 0.25 },
+        { op: "csound", name: "vco2_instr04_kpw", data: 0.25 },
+        { op: "csound", name: "vco2_instr05_kpw", data: 0.25 },
+        { op: "csound", name: "vco2_instr06_kpw", data: 0.25 },
+      ],
+    });
+  });
+
+  it("should hold and release the pink noise note through the pink buttons", async () => {
+    const startBtn = document.getElementById("start-btn");
+    const triggerBtn = document.getElementById("pink-trigger-btn");
+    const releaseBtn = document.getElementById("pink-release-btn");
+    const status = document.getElementById("status");
+
+    startBtn.click();
+    await flushPromises();
+
+    triggerBtn.click();
+    await flushPromises();
+
+    expect(mockEngine.sendScoreEvent).toHaveBeenCalledWith("i 7 0 -1");
+    expect(triggerBtn.disabled).toBe(true);
+    expect(releaseBtn.disabled).toBe(false);
+    expect(status.textContent).toBe("Triggered pink noise (instrument 7).");
+
+    releaseBtn.click();
+    await flushPromises();
+
+    expect(mockEngine.sendScoreEvent).toHaveBeenCalledWith("i -7 0 0");
+    expect(triggerBtn.disabled).toBe(false);
+    expect(releaseBtn.disabled).toBe(true);
+    expect(status.textContent).toBe("Released pink noise.");
+  });
+
+  it("should dispatch a pink amp payload when the pink amp slider moves", async () => {
+    const startBtn = document.getElementById("start-btn");
+    const pinkAmpSlider = document.getElementById("pink-amp-slider");
+
+    startBtn.click();
+    await flushPromises();
+
+    pinkAmpSlider.value = "0.5";
+    pinkAmpSlider.dispatchEvent(new Event("input"));
+    await flushPromises();
+
+    expect(mockEngine.handleMessage).toHaveBeenCalledWith({
+      payload: [{ op: "csound", name: "pinkish_instr07_kamp", data: 0.5 }],
+    });
+  });
+
+  it.each([
+    ["att-slider", "iatt", "0.2"],
+    ["dec-slider", "idec", "0.3"],
+    ["sus-slider", "islev", "0.5"],
+    ["rel-slider", "irel", "1.5"],
+  ])(
+    "should dispatch %s to the ADSR channel of all five instruments in one payload",
+    async (sliderId, param, value) => {
+      const startBtn = document.getElementById("start-btn");
+      const slider = document.getElementById(sliderId);
+
+      startBtn.click();
+      await flushPromises();
+
+      slider.value = value;
+      slider.dispatchEvent(new Event("input"));
+      await flushPromises();
+
+      expect(mockEngine.handleMessage).toHaveBeenCalledWith({
+        payload: [
+          { op: "csound", name: `vco2_instr03_${param}`, data: Number(value) },
+          { op: "csound", name: `vco2_instr04_${param}`, data: Number(value) },
+          { op: "csound", name: `vco2_instr05_${param}`, data: Number(value) },
+          { op: "csound", name: `vco2_instr06_${param}`, data: Number(value) },
+          {
+            op: "csound",
+            name: `pinkish_instr07_${param}`,
+            data: Number(value),
+          },
+        ],
+      });
+    },
+  );
+
+  it("should show an error if an ensemble slider payload fails to send", async () => {
+    mockEngine.handleMessage.mockRejectedValue(new Error("payload failed"));
+
+    const startBtn = document.getElementById("start-btn");
+    const pitchSlider = document.getElementById("pitch-slider");
+    const status = document.getElementById("status");
+
+    startBtn.click();
+    await flushPromises();
+
+    pitchSlider.dispatchEvent(new Event("input"));
     await flushPromises();
 
     expect(status.textContent).toBe("Failed to send payload: payload failed");
