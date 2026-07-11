@@ -23,6 +23,8 @@ The wrapper plus whichever instrument templates you need, no build step, no npm 
 - [public/src/cswrapper.js](public/src/cswrapper.js) — the `CsoundEngine` class
 - [public/src/instruments/poscil3-instr01.js](public/src/instruments/poscil3-instr01.js) — instrument 1, a continuously controllable oscillator
 - [public/src/instruments/vco2-instr02.js](public/src/instruments/vco2-instr02.js) — instrument 2, a filtered sawtooth
+- [public/src/instruments/vco2-square-instr03-06.js](public/src/instruments/vco2-square-instr03-06.js) — instruments 3–6, four square-wave voices with random drift, duty-cycle control, and an ADSR
+- [public/src/instruments/pinkish-instr07.js](public/src/instruments/pinkish-instr07.js) — instrument 7, pink noise with an ADSR
 
 Drop them anywhere in your project (e.g. `src/csound/`) and import them:
 
@@ -140,9 +142,64 @@ Trigger the note with a score event (e.g. `engine.sendScoreEvent("i 1 0 3600")`)
 
 Trigger the note with a score event (e.g. `engine.sendScoreEvent("i 2 0 3600")`), then drive any of the four channels live via `handleMessage()` — including several at once in a single call (e.g. `kcutoff` and `kres` together), since payload items are applied in array order. All four channels are smoothed through `port` (20ms glide) before reaching `vco2`/`moogladder`.
 
+#### vco2-square-instr03-06
+
+`public/src/instruments/vco2-square-instr03-06.js` — instruments 3–6, four identical square-wave voices generated from one template. Each voice is a PWM square (`vco2(kamp, kcps + kjit, 2, kpw)`) whose frequency drifts randomly within ±`krand` Hz around `kcps` (`randi`, clock-seeded so the voices drift independently), shaped by an ADSR envelope on the output (`madsr(iatt, idec, islev, irel)`).
+
+Each voice `<NN>` (`03`–`06`) exports `VCO2_INSTR<NN>_CSD` and `VCO2_INSTR<NN>_CHANNELS`:
+
+| Channel                | Constant                        | Csound param                    | Default                 |
+| ---------------------- | ------------------------------- | ------------------------------- | ----------------------- |
+| `vco2_instr<NN>_kamp`  | `VCO2_INSTR<NN>_CHANNELS.kamp`  | `kamp`                          | `0.2`                   |
+| `vco2_instr<NN>_kcps`  | `VCO2_INSTR<NN>_CHANNELS.kcps`  | `kcps` (base frequency, Hz)     | `220`/`275`/`330`/`440` |
+| `vco2_instr<NN>_krand` | `VCO2_INSTR<NN>_CHANNELS.krand` | `krand` (± drift range, Hz)     | `5`                     |
+| `vco2_instr<NN>_kpw`   | `VCO2_INSTR<NN>_CHANNELS.kpw`   | `kpw` (duty cycle, `0.05–0.95`) | `0.5`                   |
+| `vco2_instr<NN>_iatt`  | `VCO2_INSTR<NN>_CHANNELS.iatt`  | `iatt` (attack, s)              | `0.05`                  |
+| `vco2_instr<NN>_idec`  | `VCO2_INSTR<NN>_CHANNELS.idec`  | `idec` (decay, s)               | `0.1`                   |
+| `vco2_instr<NN>_islev` | `VCO2_INSTR<NN>_CHANNELS.islev` | `islev` (sustain level, `0–1`)  | `0.7`                   |
+| `vco2_instr<NN>_irel`  | `VCO2_INSTR<NN>_CHANNELS.irel`  | `irel` (release, s)             | `0.5`                   |
+
+The default base frequencies (`220`/`275`/`330`/`440` for instruments 3/4/5/6) form a 4:5:6:8 ratio, so triggering all four voices untouched already sounds like an ensemble. Trigger each voice with its own score event (e.g. `engine.sendScoreEvent("i 3 0 3600")` … `"i 6 0 3600"`). The k-rate channels (`kamp`, `kcps`, `krand`, `kpw`) are smoothed through `port` (20ms glide) and can be driven live; the ADSR channels are read once at note start, so changing them affects the next triggered note, and the release stage plays when the note ends.
+
+Example — hold one voice, reshape it live, then release it through the ADSR release stage:
+
+```js
+await engine.compile(VCO2_INSTR03_CSD);
+
+// Negative p3 holds the note at the ADSR sustain level until turned off.
+await engine.sendScoreEvent("i 3 0 -1");
+
+// Live control while the note sounds (k-rate channels), plus an envelope
+// tweak that lands on the next trigger (i-rate channels).
+await engine.handleMessage({
+  payload: [
+    { op: "csound", name: VCO2_INSTR03_CHANNELS.kpw, data: 0.25 },
+    { op: "csound", name: VCO2_INSTR03_CHANNELS.krand, data: 10 },
+    { op: "csound", name: VCO2_INSTR03_CHANNELS.irel, data: 2 },
+  ],
+});
+
+// Turnoff plays the madsr release stage instead of cutting the note dead.
+await engine.sendScoreEvent("i -3 0 0");
+```
+
+#### pinkish-instr07
+
+`public/src/instruments/pinkish-instr07.js` — instrument 7, pink noise (`pinkish(kamp)`) shaped by an ADSR envelope on the output (`madsr(iatt, idec, islev, irel)`).
+
+| Channel                 | Constant                         | Csound param                   | Default |
+| ----------------------- | -------------------------------- | ------------------------------ | ------- |
+| `pinkish_instr07_kamp`  | `PINKISH_INSTR07_CHANNELS.kamp`  | `kamp`                         | `0.2`   |
+| `pinkish_instr07_iatt`  | `PINKISH_INSTR07_CHANNELS.iatt`  | `iatt` (attack, s)             | `0.05`  |
+| `pinkish_instr07_idec`  | `PINKISH_INSTR07_CHANNELS.idec`  | `idec` (decay, s)              | `0.1`   |
+| `pinkish_instr07_islev` | `PINKISH_INSTR07_CHANNELS.islev` | `islev` (sustain level, `0–1`) | `0.7`   |
+| `pinkish_instr07_irel`  | `PINKISH_INSTR07_CHANNELS.irel`  | `irel` (release, s)            | `0.5`   |
+
+Trigger the note with a score event (e.g. `engine.sendScoreEvent("i 7 0 3600")`). `kamp` is smoothed through `port` (20ms glide) and can be driven live; the ADSR channels are read once at note start, so changing them affects the next triggered note.
+
 ### Adding a new instrument
 
-1. Add `public/src/instruments/<opcode>-instr<NN>.js` exporting a `<NAME>_CHANNELS` map and a `<NAME>_CSD` string, following the pattern in `poscil3-instr01.js`.
+1. Add `public/src/instruments/<opcode>-instr<NN>.js` exporting a `<NAME>_CHANNELS` map and a `<NAME>_CSD` string, following the pattern in `poscil3-instr01.js`. A family of near-identical instruments can share one file that generates and exports a `<NAME>_CHANNELS`/`<NAME>_CSD` pair per instrument, as in `vco2-square-instr03-06.js`.
 2. Name every control channel `<opcode>_instr<NN>_<param>`, matching the opcode's own argument names.
 3. Seed default channel values at the top level of the CSD (outside any `instr` block) so the instrument is safe to trigger before any payload arrives.
 
@@ -166,7 +223,7 @@ npm install
 npm start
 ```
 
-Open `http://localhost:3000`. The demo starts Csound with a page-local `AudioContext` (standing in for one an RNBO session would own), compiles both `poscil3-instr01` and `vco2-instr02` into the same running engine, and exposes sliders for each that drive them through `handleMessage()` — the same path a real RNBO integration would use.
+Open `http://localhost:3000`. The demo starts Csound with a page-local `AudioContext` (standing in for one an RNBO session would own), compiles every instrument template (`poscil3-instr01`, `vco2-instr02`, the four `vco2-square` voices, and `pinkish-instr07`) into the same running engine, and exposes sliders for each that drive them through `handleMessage()` — the same path a real RNBO integration would use. The square ensemble and pink noise sections hold notes with `i N 0 -1` and release them with `i -N 0 0`, so the ADSR sustain and release stages are audible, and their sliders fan one control out to several instruments' channels in a single payload.
 
 > The browser will require a user interaction, such as clicking a button, before audio can start. This is standard browser audio policy.
 
@@ -186,6 +243,8 @@ npm run format -- --check
 - [public/src/cswrapper.js](public/src/cswrapper.js) — `CsoundEngine` (the integration API)
 - [public/src/instruments/poscil3-instr01.js](public/src/instruments/poscil3-instr01.js) — poscil3 instrument template
 - [public/src/instruments/vco2-instr02.js](public/src/instruments/vco2-instr02.js) — filtered vco2 instrument template
+- [public/src/instruments/vco2-square-instr03-06.js](public/src/instruments/vco2-square-instr03-06.js) — four-voice square-wave instrument templates
+- [public/src/instruments/pinkish-instr07.js](public/src/instruments/pinkish-instr07.js) — pink noise instrument template
 - [tests/](tests/) — Jest coverage for the wrapper, instrument templates, and demo wiring
 
 ## Contact
