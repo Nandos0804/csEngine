@@ -33,9 +33,9 @@
   <body>
     <h1>csEngine</h1>
     <p>
-      Reference demo: two instrument templates compiled into the same running
-      engine, both driven by the same JSON payload shape used to integrate
-      alongside an RNBO session.
+      Reference demo: all instrument templates compiled into the same running
+      engine, driven by the same JSON payload shape used to integrate alongside
+      an RNBO session.
     </p>
 
     <button id="start-btn">Start Csound engine</button>
@@ -94,6 +94,126 @@
         max="1"
         step="0.01"
         value="0.3"
+        disabled
+      />
+    </p>
+
+    <h2>Instruments 3-6: square ensemble</h2>
+    <p>
+      Four detuned square voices (4:5:6:8 frequency spread), each drifting
+      randomly around its base frequency. Held notes sustain at the ADSR sustain
+      level until released.
+    </p>
+    <button id="ensemble-trigger-btn" disabled>Trigger ensemble</button>
+    <button id="ensemble-release-btn" disabled>Release ensemble</button>
+
+    <p>
+      <label for="pitch-slider">base pitch (vco2_instr03..06_kcps)</label><br />
+      <input
+        id="pitch-slider"
+        type="range"
+        min="55"
+        max="880"
+        step="1"
+        value="220"
+        disabled
+      />
+    </p>
+    <p>
+      <label for="drift-slider">random drift ±Hz (vco2_instr03..06_krand)</label
+      ><br />
+      <input
+        id="drift-slider"
+        type="range"
+        min="0"
+        max="50"
+        step="0.5"
+        value="5"
+        disabled
+      />
+    </p>
+    <p>
+      <label for="duty-slider">duty cycle (vco2_instr03..06_kpw)</label><br />
+      <input
+        id="duty-slider"
+        type="range"
+        min="0.05"
+        max="0.95"
+        step="0.01"
+        value="0.5"
+        disabled
+      />
+    </p>
+
+    <h2>Instrument 7: pink noise</h2>
+    <button id="pink-trigger-btn" disabled>Trigger noise</button>
+    <button id="pink-release-btn" disabled>Release noise</button>
+
+    <p>
+      <label for="pink-amp-slider">amp (pinkish_instr07_kamp)</label><br />
+      <input
+        id="pink-amp-slider"
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value="0.2"
+        disabled
+      />
+    </p>
+
+    <h2>ADSR envelope (instruments 3-7)</h2>
+    <p>
+      One envelope control for all five: each slider writes the matching channel
+      of every voice in a single payload. Stages are read at note start, so
+      retrigger to hear a change; the release stage plays when a held note is
+      released.
+    </p>
+    <p>
+      <label for="att-slider">attack s (..._iatt)</label><br />
+      <input
+        id="att-slider"
+        type="range"
+        min="0.001"
+        max="2"
+        step="0.001"
+        value="0.05"
+        disabled
+      />
+    </p>
+    <p>
+      <label for="dec-slider">decay s (..._idec)</label><br />
+      <input
+        id="dec-slider"
+        type="range"
+        min="0.001"
+        max="2"
+        step="0.001"
+        value="0.1"
+        disabled
+      />
+    </p>
+    <p>
+      <label for="sus-slider">sustain level (..._islev)</label><br />
+      <input
+        id="sus-slider"
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value="0.7"
+        disabled
+      />
+    </p>
+    <p>
+      <label for="rel-slider">release s (..._irel)</label><br />
+      <input
+        id="rel-slider"
+        type="range"
+        min="0.001"
+        max="4"
+        step="0.001"
+        value="0.5"
         disabled
       />
     </p>
